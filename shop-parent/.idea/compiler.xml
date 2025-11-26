@@ -12,6 +12,7 @@
         <module name="product-server" />
         <module name="pay-api" />
         <module name="intergral-api" />
+        <module name="ai-service" />
         <module name="seckill-api" />
         <module name="pay-server" />
         <module name="job-server" />
@@ -24,9 +25,11 @@
         <module name="canal-client" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel target="17" />
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ai-service" options="-parameters" />
       <module name="api-gateway" options="-parameters" />
       <module name="canal-client" options="-parameters" />
       <module name="frontend-server" options="-parameters" />

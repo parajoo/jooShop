@@ -9,13 +9,19 @@ import cn.wolfcode.domain.PayVo;
 import cn.wolfcode.domain.RefundVo;
 import cn.wolfcode.feign.SeckillFeignService;
 import cn.wolfcode.web.msg.PayCodeMsg;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayConfig;
+import com.alipay.api.domain.AlipayTradeFastpayRefundQueryModel;
+import com.alipay.api.domain.AlipayTradeRefundModel;
 import com.alipay.api.internal.util.AlipaySignature;
+import com.alipay.api.request.AlipayTradeFastpayMyQueryRequest;
+import com.alipay.api.request.AlipayTradeFastpayRefundQueryRequest;
 import com.alipay.api.request.AlipayTradePagePayRequest;
 import com.alipay.api.request.AlipayTradeRefundRequest;
+import com.alipay.api.response.AlipayTradeFastpayRefundQueryResponse;
 import com.alipay.api.response.AlipayTradePagePayResponse;
 import com.alipay.api.response.AlipayTradeRefundResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -40,8 +49,43 @@ public class AlipayController {
         this.alipayProperties = alipayProperties;
         this.seckillFeignService = seckillFeignService;
     }
+    @PostMapping("/refund")
+    public Result<Boolean> refund(@RequestBody RefundVo refundVo) {
+        AlipayTradeRefundRequest alipayRequest = new AlipayTradeRefundRequest();
+        AlipayTradeRefundModel model = new AlipayTradeRefundModel();
+        model.setOutTradeNo(refundVo.getOutTradeNo());
+        model.setRefundAmount(refundVo.getRefundAmount());
+        model.setRefundReason(refundVo.getRefundReason());
+        alipayRequest.setBizModel(model);
+        try {
+            AlipayTradeRefundResponse response = alipayClient.execute(alipayRequest);
+            log.info("[支付宝退款] 收到支付宝退款响应消息:{}", JSON.toJSONString(response));
+            if (!response.isSuccess()) {
+                throw new BusinessException(new CodeMsg(501, response.getMsg()));
+            }
+            //判断是否支付成功
+            if("Y".equalsIgnoreCase(response.getFundChange())){return Result.success(true);}
+            //如果fund_change=N应该再调用接口查询是否支付成功
+            AlipayTradeFastpayRefundQueryRequest refundQueryRequest = new AlipayTradeFastpayRefundQueryRequest();
+            AlipayTradeFastpayRefundQueryModel refundQueryModel = new AlipayTradeFastpayRefundQueryModel();
+            refundQueryModel.setOutTradeNo(refundVo.getOutTradeNo());
+            refundQueryModel.setOutRequestNo(refundVo.getOutTradeNo());
+            alipayRequest.setBizModel(refundQueryModel);
+            //refundQueryModel.setBizModel(refundQueryModel);
+            AlipayTradeFastpayRefundQueryResponse refundQueryResponse = alipayClient.execute(refundQueryRequest);
+            if("10000".equals(refundQueryResponse.getCode()) && "REFUND_SUCCESS".equalsIgnoreCase(refundQueryResponse.getRefundStatus())) {
+                return Result.success(true);
+            }
+
+        } catch (AlipayApiException e) {
+            e.printStackTrace();
+            return Result.error(new CodeMsg(506001,e.getMessage()));
+        }
+        return Result.success(false);
+    }
+
     @GetMapping("/return_url")
-    public String returnUrl(HttpServletRequest request) {
+    public void returnUrl(HttpServletRequest request, HttpServletResponse resp) {
         Map<String,String> params = new HashMap<String,String>();
         Map requestParams = request.getParameterMap();
         for (Iterator iter = requestParams.keySet().iterator(); iter.hasNext();) {
@@ -60,18 +104,24 @@ public class AlipayController {
             boolean verify_result = AlipaySignature.rsaCheckV1(params, alipayProperties.getAlipayPublicKey(),
                     alipayProperties.getCharset(), "RSA2");
             if (!verify_result) {
-                throw new BusinessException(new CodeMsg(501, "支付宝签名验证失败"));
+                throw new BusinessException(new CodeMsg(501, "支付宝回调签名验证失败"));
             }
             String outTradeNo = request.getParameter("out_trade_no");
-            return "redirect:http://localhost/order_detail.html?orderNo="+outTradeNo;
-        } catch (AlipayApiException e) {
+
+            resp.sendRedirect("http://localhost/order_detail.html?orderNo="+outTradeNo);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return "签名验证失败";
+
+        try {
+            resp.getWriter().print("签名验证失败");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @PostMapping("/notify_url")
-    public String notifyUrl(HttpServletRequest request) {
+    public String notifyUrl(HttpServletRequest request) throws UnsupportedEncodingException {
         //接收支付宝参数
         Map<String,String> params = new HashMap<String,String>();
         Map<String, String[]> requestParams = request.getParameterMap();
@@ -84,7 +134,7 @@ public class AlipayController {
                         : valueStr + values[i] + ",";
             }
             //乱码解决，这段代码在出现乱码时使用。如果mysign和sign不相等也可以使用这段代码转化
-            //valueStr = new String(valueStr.getBytes("ISO-8859-1"), "gbk");
+           // valueStr = new String(valueStr.getBytes("ISO-8859-1"), "gbk");
             params.put(name, valueStr);
         }
         try {
@@ -134,9 +184,9 @@ public class AlipayController {
         bizContent.put("product_code", "FAST_INSTANT_TRADE_PAY");
 
         //receive address asynchronously,support http/https only,access by public net
-        request.setNotifyUrl("");
+        request.setNotifyUrl("http://kd597e86.natappfree.cc/pay/alipay/notify_url");
         //skip address synchronously,support http/https only
-        request.setReturnUrl("");
+        request.setReturnUrl("http://kd597e86.natappfree.cc/pay/alipay/return_url");
         request.setBizContent(bizContent.toString());
         try {
             AlipayTradePagePayResponse response = alipayClient.pageExecute(request);

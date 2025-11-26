@@ -11,4 +11,3 @@ spring:
         namespace: shop-flashsale
   profiles:
     active: dev # 环境标识
-

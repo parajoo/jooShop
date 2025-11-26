@@ -1,6 +1,7 @@
 package cn.wolfcode.mq.listener;
 
 import cn.wolfcode.common.web.Result;
+import cn.wolfcode.domain.OrderInfo;
 import cn.wolfcode.mq.DefaultSendCallback;
 import cn.wolfcode.mq.MQConstant;
 import cn.wolfcode.mq.OrderMQResult;
@@ -40,18 +41,25 @@ public class OrderPendingMessageListener implements RocketMQListener<OrderMessag
         OrderMQResult orderMQResult = new OrderMQResult();
         orderMQResult.setToken(message.getToken());
         try {
-            String orderNo = orderInfoService.doSeckill(message.getUserPhone(), message.getSeckillId(), message.getTime());
-            orderMQResult.setOrderNo(orderNo);
+            /**
+             * 5.本地事务：减DB库存+生成订单 @Transactional
+             * 6.订单创建成功发送延时消息
+             */
+            OrderInfo orderInfo = orderInfoService.doSeckill(message.getUserPhone(), message.getSeckillId(), message.getTime());
+            orderMQResult.setOrderNo(orderInfo.getOrderNo());
             //订单创建成功
             orderMQResult.setCode(Result.SUCCESS_CODE);
             orderMQResult.setMsg("order creating successfully");
             //下单成功后  发送delay消息 检查订单支付状态 若超时未支付 直接取消订单 -- 回滚redis和MySQL的库存
-            message.setOrderNo(orderNo);
+            message.setOrderNo(orderInfo.getOrderNo());
             Message<OrderMessage> orderMessage = MessageBuilder.withPayload(message).build();
             rocketMQTemplate.asyncSend(MQConstant.ORDER_PAY_TIMEOUT_TOPIC,orderMessage,
-                    new DefaultSendCallback("CHECK STATUS:PAY TIMEOUT!"),5000,3);
+                    new DefaultSendCallback("CHECK STATUS:PAY TIMEOUT!"),5000,9);
 
         } catch (Exception e) {
+            /**
+             * 7.订单创建失败：补偿redis库存
+             */
             orderMQResult.setCode(SeckillCodeMsg.SECKILL_ERROR.getCode());
             orderMQResult.setMsg(SeckillCodeMsg.SECKILL_ERROR.getMsg());
             //创建失败,回补redis数量控制，删除用户下单标识（在哪），本地下单标识

@@ -13,10 +13,8 @@ import cn.wolfcode.service.ISeckillProductService;
 import cn.wolfcode.util.AssertUtils;
 import cn.wolfcode.util.IdGenerateUtil;
 import com.alibaba.fastjson.JSON;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,7 +22,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
-import java.sql.Time;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,7 +51,7 @@ public class SeckillProductServiceImpl implements ISeckillProductService {
 
     @Override
     public List<SeckillProductVo> selectTodayListByTime(Integer time) {
-        // 1. 调用秒杀服务接口, 基于今天的时间, 查询今天的所有秒杀商品数据
+        // 1. 调用秒杀服务接口, 基于今天的时间, 查询今天的所有秒杀商品数据--mybatis+xml
         List<SeckillProduct> todayList = seckillProductMapper.queryCurrentlySeckillProduct(time);
         // 2. 遍历秒杀商品列表, 得到商品 id 列表
         List<Long> productIdList = todayList.stream() // Stream<SeckillProduct>
@@ -62,7 +59,7 @@ public class SeckillProductServiceImpl implements ISeckillProductService {
                 .distinct()
                 .collect(Collectors.toList());
         // 3. 根据商品 id 列表, 调用商品服务查询接口, 得到商品列表
-        Result<List<Product>> result = productFeignApi.selectByIdList(productIdList);
+        Result<List<Product>> result = productFeignApi.selectByIdList(productIdList);//product--mybatis+xml
         /**
          * result 可能存在的几种情况:
          *  1. 远程接口正常返回, code == 200, data == 想要的数据
@@ -130,7 +127,7 @@ public class SeckillProductServiceImpl implements ISeckillProductService {
         return vo;
     }
     //optimistic lock
-    @CacheEvict(key = "'selectByIdAndTime:'  + #Id")
+    @CacheEvict(key = "'selectByIdAndTime:'  + #id")
     @Override
     public void decrStockCount(Long id){
         int row = seckillProductMapper.decrStock(id);
@@ -155,7 +152,7 @@ public class SeckillProductServiceImpl implements ISeckillProductService {
     5.为避免业务没执行完，锁就过期了，引入watchdog实现锁自动续期
      */
 
-    @CacheEvict(key = "'selectByIdAndTime:'  + #Id")//2025/8/17加
+    @CacheEvict(key = "'selectByIdAndTime:'  + #id")//2025/8/17加
     //@CacheEvict(key = "'selectByIdAndTime:' + #time + ':' + #id")
     @Override
     public void decrStockCount(Long id, Integer time) {

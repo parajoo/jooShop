@@ -19,17 +19,12 @@ import cn.wolfcode.web.msg.SeckillCodeMsg;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -80,7 +75,13 @@ public class OrderInfoController {
 
     @RequireLogin
     @PostMapping("/doSeckill")
-    public Result<?> doSeckill(Long seckillId, Integer time, @RequestUser UserInfo userInfo, @RequestHeader("token") String token){
+    public Result<?> doSeckill(Long seckillId, Integer time,
+                               @RequestUser UserInfo userInfo,
+                               @RequestHeader("token") String token){
+        /**
+         * 1.本地内存标识STOCK_OVER_FLOW_MAP
+         * 2.重复下单标识redis Hash
+         */
            //判断库存是否已经卖完了 如果已经卖完 直接返回异常
            Boolean flag = STOCK_OVER_FLOW_MAP.get(seckillId);
            if(flag!=null && flag){
@@ -101,8 +102,10 @@ public class OrderInfoController {
            }
 
            //5.判断用户是否已经下过订单--
-           String userOrderFlag = SeckillRedisKey.SECKILL_ORDER_HASH.join(seckillId + "");
-           Long orderCount = redisTemplate.opsForHash().increment(userOrderFlag, userInfo.getPhone() + "", -1);
+           String userOrderFlag = SeckillRedisKey.SECKILL_ORDER_HASH.join(
+                   seckillId + "");
+           Long orderCount = redisTemplate.opsForHash().increment(
+                   userOrderFlag, userInfo.getPhone() + "", 1);
            //OrderInfo orderInfo = orderInfoService.selectByUserIdAndSeckillId(userInfo.getPhone(),seckillId,time);
            if(orderCount>1){
                return Result.error(SeckillCodeMsg.REPEAT_SECKILL);
@@ -110,7 +113,11 @@ public class OrderInfoController {
            String orderNum = null;
 
            try {
-               //4.判断库存是否充足
+               /**
+                * 3.redis原子预减
+                * 4.异步发送MQ消息，创建订单
+                */
+               //4.判断库存是否充足--redis原子预减操作
                String hashKey = SeckillRedisKey.SECKILL_STOCK_COUNT_HASH.join(time + "");
                Long remain = redisTemplate.opsForHash().increment(hashKey, seckillId + "", -1);
                AssertUtils.isTrue(remain>=0,"sold out!");

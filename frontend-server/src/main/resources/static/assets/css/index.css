@@ -25,7 +25,7 @@
 }
 .seckill-menu-active {
     color: #fff;
-    background: #e01222;
+    background: #40a9ff;
 }
 /* 列表内容样式 */
 .seckill-content {
@@ -131,7 +131,7 @@
     /*border-color: red transparent transparent;*/
 /*}*/
 .seckill-tab-active {
-    background:#e01222;
+    background:#40a9ff;
     /*margin: 0 60px;*/
 }
 .seckill-tab-active .seckill-time {
@@ -259,7 +259,7 @@
     font-size: 14px;
     height: 21px;
     line-height: 21px;
-    color: #e01222;
+    color: #40a9ff;
     text-align: left;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -301,7 +301,7 @@
 }
 .seckill-number {
     font-size: 24px;
-    color: #e01222;
+    color: #40a9ff;
     font-family: arial;
     margin-right: 2px;
     line-height: 1;
@@ -335,7 +335,7 @@
     border-radius: 8px;
 }
 .current-progress {
-    background: #df0021;
+    background: #40a9ff;
     position: absolute;
     left: 0;
     top: 0;
@@ -352,7 +352,7 @@
     margin: auto 0;
     width: 80px;
     text-align: center;
-    background: #df0021;
+    background: #40a9ff;
     cursor: pointer;
 }
 .operation-button:hover,.operation-button:focus{

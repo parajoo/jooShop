@@ -16,8 +16,11 @@ import java.util.List;
 @RequestMapping("/seckillProduct")
 @Slf4j
 public class SeckillProductController {
-    @Autowired
-    private ISeckillProductService seckillProductService;
+    private final ISeckillProductService seckillProductService;
+
+    public SeckillProductController(ISeckillProductService seckillProductService) {
+        this.seckillProductService = seckillProductService;
+    }
 
     @RequestMapping("/queryByTime")
     public Result<List<SeckillProductVo>> queryByTime(Integer time) {

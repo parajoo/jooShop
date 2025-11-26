@@ -1,6 +1,6 @@
 <div class="seckill-top"><div class="seckill-welcome">
     <div class="welcome-content">
-        <div class="seckill-text">欢迎来到叩丁严选</div>
+        <div class="seckill-text">欢迎来到jooShop</div>
         <ul class="seckill-ul">
             <li class="seckill-li">
                 <a href="personalCenter.html" target="_blank" class="user-name">
@@ -8,9 +8,9 @@
                     <span id="nickName">777</span>
                 </a>
             </li>
-            <li class="seckill-li">
-                <a href="#" target="_blank" class="user-name">
-                    <label>我的订单</label>
+            <li class="seckill-li userInfo">
+                <a href="javascript:void(0)" onclick="openCustomerService()" class="user-name">
+                    <label>智能客服</label>
                 </a>
             </li>
             <li class="seckill-li seckill-shopping">
@@ -40,3 +40,8 @@
     </div>
 </div></div>
 <script type="text/javascript" src="assets/js/header.js"></script>
+<script>
+    function openCustomerService() {
+        window.location.href = "customer_service.html";  // 新聊天页面
+    }
+</script>

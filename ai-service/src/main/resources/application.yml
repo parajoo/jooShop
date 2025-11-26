@@ -1,0 +1,6 @@
+server:
+  port: 8089   # 保证不和你现有服务冲突
+
+spring:
+  application:
+    name: ai-service

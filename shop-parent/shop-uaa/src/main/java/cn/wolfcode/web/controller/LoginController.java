@@ -16,9 +16,10 @@ public class LoginController {
     private IUserService userService;
 
     @PostMapping
-    public Result<UserResponse> login(@RequestBody UserLogin userLogin,
-                                      @RequestHeader(value = CommonConstants.REAL_IP, required = false) String ip,
-                                      @RequestHeader(value = CommonConstants.TOKEN_NAME, required = false) String token) {
+    public Result<UserResponse> login(
+            @RequestBody UserLogin userLogin,
+            @RequestHeader(value = CommonConstants.REAL_IP, required = false) String ip,
+            @RequestHeader(value = CommonConstants.TOKEN_NAME, required = false) String token) {
         /**
          * 获取用户IP,因为微服务的请求是网关转发过来的.
          * 所以request.getRemoteAddr()获取到的是网关的IP
@@ -26,7 +27,8 @@ public class LoginController {
          * 在微服务中通过获取请求头从而获取到真实的客户端IP
          */
         //进行登录，并将这个token返回给前台
-        UserResponse userResponse = userService.login(userLogin.getPhone(), userLogin.getPassword(), ip, token);
+        UserResponse userResponse = userService.login(userLogin.getPhone(),
+                userLogin.getPassword(), ip, token);
         return Result.success(userResponse);
     }
 }

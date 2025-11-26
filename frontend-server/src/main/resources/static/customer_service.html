@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>智能客服</title>
+    <link rel="stylesheet" href="/assets/layui/css/layui.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .page-wrap {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 900px;
+            height: 80vh;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 顶部栏 */
+        .chat-header {
+            height: 56px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(90deg, #1890ff, #40a9ff);
+            color: #fff;
+        }
+        .chat-header .back {
+            margin-right: 12px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .chat-header-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .chat-header-desc {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-left: 8px;
+        }
+
+        /* 聊天区域 */
+        #chat-box {
+            flex: 1;
+            padding: 16px 20px;
+            background: #f7f8fa;
+            overflow-y: auto;
+        }
+
+        .msg {
+            display: flex;
+            margin: 10px 0;
+        }
+        .msg.ai {
+            justify-content: flex-start;
+        }
+        .msg.user {
+            justify-content: flex-end;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin: 0 8px;
+            object-fit: cover;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .bubble-wrap {
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-break: break-all;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .ai .bubble {
+            background: #ffffff;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user .bubble {
+            background: #1890ff;
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .ai .msg-time {
+            text-align: left;
+        }
+        .user .msg-time {
+            text-align: right;
+        }
+
+        /* 输入区域 */
+        .chat-input-area {
+            padding: 10px 16px;
+            border-top: 1px solid #eee;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-input-area .layui-input {
+            flex: 1;
+        }
+
+        .placeholder-tip {
+            font-size: 12px;
+            color: #999;
+            margin-left: auto;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrap">
+    <div class="chat-container">
+        <!-- 顶部栏 -->
+        <div class="chat-header">
+            <div class="back" onclick="window.location.href='index.html'">←</div>
+            <div class="chat-header-title">智能客服</div>
+            <div class="chat-header-desc">jooShop · 在线为您服务</div>
+        </div>
+
+        <!-- 聊天区域 -->
+        <div id="chat-box"></div>
+
+        <!-- 底部输入区域 -->
+        <div class="chat-input-area">
+            <span class="placeholder-tip">按 Enter 发送</span>
+            <input id="user-input" class="layui-input" placeholder="请输入您的问题..." />
+            <button id="send-btn" class="layui-btn layui-btn-normal">发送</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/layui/layui.js"></script>
+
+<script>
+    // 换成你真实存在的 jpg 路径
+    const aiAvatar   = "/img/ai_avatar.jpg";
+    const userAvatar = "/img/user_avatar.jpg";
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const chatBox = document.getElementById("chat-box");
+        const input   = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
+
+        sendBtn.addEventListener("click", sendMessage);
+        input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = "";
+
+            appendUserMsg(text);
+
+            // 1. 先插入一个“正在思考中…”的占位
+            const thinkingId = appendAiThinking();
+
+            // 2. 调后端
+            fetch("http://localhost:8089/api/ai/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question: text })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 3. 删除占位
+                    removeAiThinking(thinkingId);
+                    // 4. 显示真正回答
+                    appendAiMsg(data && data.answer ? data.answer : "后端没有返回 answer 字段");
+                })
+                .catch(err => {
+                    console.error("请求失败:", err);
+                    removeAiThinking(thinkingId);
+                    appendAiMsg("抱歉，服务器开小差了，请稍后再试～");
+                });
+        }
+
+
+        function appendUserMsg(msg) {
+            const html = `
+                <div class="msg user">
+                    <div class="bubble-wrap">
+                        <div class="bubble">${escapeHtml(msg)}</div>
+                        <div class="msg-time">${formatTime()}</div>
+                    </div>
+                    <img src="${userAvatar}" class="avatar" onerror="this.style.display='none'">
+                </div>`;
+            chatBox.insertAdjacentHTML("beforeend", html);
+            scrollBottom();
+        }
+
+        function appendAiMsg(msg) {
+            const html = `
+                <div class="msg ai">
+                    <img src="${aiAvatar}" class="avatar" onerror="this.style.display='none'">
+                    <div class="bubble-wrap">
+                        <div class="bubble">${escapeHtml(msg)}</div>
+                        <div class="msg-time">${formatTime()}</div>
+                    </div>
+                </div>`;
+            chatBox.insertAdjacentHTML("beforeend", html);
+            scrollBottom();
+        }
+
+        // 显示“正在思考中…”
+        function appendAiThinking() {
+            const id = "thinking-" + Date.now();
+            const html = `
+        <div class="msg ai" id="${id}">
+            <img src="${aiAvatar}" class="avatar" onerror="this.style.display='none'">
+            <div class="bubble-wrap">
+                <div class="bubble">正在思考中…</div>
+            </div>
+        </div>`;
+            chatBox.insertAdjacentHTML("beforeend", html);
+            scrollBottom();
+            return id;
+        }
+
+// 删除“正在思考中…”
+        function removeAiThinking(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.remove();
+            }
+        }
+
+
+        function scrollBottom() {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function (ch) {
+                return ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                })[ch];
+            });
+        }
+
+        function formatTime() {
+            const d = new Date();
+            const h = d.getHours().toString().padStart(2, '0');
+            const m = d.getMinutes().toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        // 欢迎语
+        appendAiMsg("您好，我是智能客服小joo，很高兴为您服务～ 目前为测试模式，您可以随便输入点什么看看效果。");
+    });
+</script>
+
+</body>
+</html>
+

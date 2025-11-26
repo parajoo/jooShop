@@ -33,7 +33,7 @@ public class TokenController {
 
     @RequestMapping("/initData")
     @Transactional
-    public Result<String> initData(@RequestParam(required = false, defaultValue = "500") Integer num) throws Exception {
+    public Result<String> initData(@RequestParam(required = false, defaultValue = "2000") Integer num) throws Exception {
         int limit = 500;
         int count=0;
         int page = num%limit == 0? num/limit : num/limit+1;
@@ -48,7 +48,7 @@ public class TokenController {
     }
     @RequestMapping("/mockLogin")
     @Transactional
-    public Result<String> mockLogin(@RequestParam(required = false, defaultValue = "500") Integer num) throws Exception {
+    public Result<String> mockLogin(@RequestParam(required = false, defaultValue = "2000") Integer num) throws Exception {
        // List<UserLogin> userLoginList = userService.selectUserLoginList(num);//在内存中创建500个User对象
        List<UserLogin> userLoginList = initUserLogin(num);
         createToken(userLoginList);

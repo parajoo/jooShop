@@ -52,7 +52,7 @@
 }
 .subtitle-text {
     font-size:12px;
-    color:red;
+    color:dodgerblue;
 }
 .subtitle-text span {
     color:#5e69ad;
@@ -68,7 +68,7 @@
     justify-content: center;
     padding:5px 10px;
     box-sizing: border-box;
-    background:#fe0851;
+    background:#40a9ff;
 }
 .title-text {
     display: flex;
@@ -155,7 +155,7 @@
 }
 .price {
     font-size: 22px;
-    color:#e4393c;
+    color:#40a9ff;
 }
 .price span {
     font-size:12px;
@@ -194,7 +194,7 @@
     font-weight: bold;
     color:#fff;
     cursor: pointer;
-    background:#df3033;
+    background:#40a9ff;
 }
 .blank-text {
     color:#999;
@@ -216,7 +216,7 @@
     flex-direction: row;
     align-items: center;
     border: 1px solid #eee;
-    border-bottom: 1px solid #e4393c;
+    border-bottom: 1px solid #40a9ff;
 }
 .trigger {
     padding: 10px 25px;
@@ -225,7 +225,7 @@
     cursor: pointer;
 }
 .trigger:hover {
-    color:red;
+    color:dodgerblue;
 }
 .trigger-active:hover {
     color:#fff;
@@ -244,7 +244,7 @@
     color:#5e69ad;
 }
 .trigger-active {
-    background:red;
+    background:cornflowerblue;
     color:#fff;
 }
 .commodity-bottom-ul {
@@ -281,7 +281,7 @@
     display: inline-block;
 }
 .progressNum {
-    background: red;
+    background: dodgerblue;
     width: 60%;
     display: block;
     height: 8px;
@@ -290,7 +290,7 @@
 .progressText {
     padding-left:10px;
     box-sizing: border-box;
-    color: red;
+    color: dodgerblue;
     font-size:12px;
     display: inline-block;
 }

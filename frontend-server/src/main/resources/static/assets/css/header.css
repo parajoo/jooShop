@@ -140,7 +140,7 @@ input:focus,input:active,button:focus,button:active{
 .search-img {
     width: 50px;
     height: 40px;
-    background-color: #0a328e;
+    background-color: #40a9ff;
     text-align: center;
     line-height: 42px;
     background-image: url(../image/search.png);
@@ -155,7 +155,7 @@ input:focus,input:active,button:focus,button:active{
     padding-top:20px;
     box-sizing: border-box;
     background: #fff;
-    border-bottom: 2px solid #e01222;
+    border-bottom: 2px solid #40a9ff;
     transition: all 1s ease;
 }
 .seckill-classify-active {
